@@ -1,13 +1,9 @@
 package com.example.kvdb.api;
 
-/**
- * Конфигурация базы данных.
- * Определяет основные параметры работы движка.
- */
+
 public class DatabaseConfig {
     private final String dataPath;
     private final int cacheSize;
-    // (Можно добавить параметры fsync и др. при необходимости)
 
     public DatabaseConfig(String dataPath) {
         this(dataPath, 0);

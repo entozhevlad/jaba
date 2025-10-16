@@ -6,9 +6,6 @@ import com.example.kvdb.api.TableOptions;
 
 import java.io.*;
 
-/**
- * Реализация Write-Ahead Log (WAL) с хранением в файле.
- */
 public class ArkashaWriteAheadLog implements WriteAheadLog {
     private final ArkashaEngine engine;
     private final File logFile;
@@ -37,15 +34,11 @@ public class ArkashaWriteAheadLog implements WriteAheadLog {
             return;
         }
         try (RandomAccessFile raf = new RandomAccessFile(logFile, "rw")) {
-            // Move to end for append
             raf.seek(logFile.length());
-            // Write operation type
             raf.writeByte(record.type == LogRecord.Type.PUT ? 1 : 2);
-            // Write table name
             byte[] tableBytes = record.tableName.getBytes("UTF-8");
             raf.writeInt(tableBytes.length);
             raf.write(tableBytes);
-            // Write key
             byte[] keyBytes = record.key.getBytes("UTF-8");
             raf.writeInt(keyBytes.length);
             raf.write(keyBytes);
@@ -70,11 +63,9 @@ public class ArkashaWriteAheadLog implements WriteAheadLog {
 
     @Override
     public synchronized void replay() {
-        // Delegate to internal replay using engine reference
         replay(engine);
     }
 
-    // Replays the WAL and returns number of records processed
     synchronized int replay(ArkashaEngine engine) {
         if (!logFile.exists()) {
             return 0;
@@ -103,7 +94,6 @@ public class ArkashaWriteAheadLog implements WriteAheadLog {
                     if (valueLen > 0) {
                         in.readFully(valueBytes);
                     }
-                    // Create table if it did not exist (with default WAL enabled options)
                     if (engine.getTableOptions(tableName) == null) {
                         engine.createTable(tableName, new TableOptions(true, false, -1));
                     }

@@ -13,10 +13,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * Потокобезопасное in-memory хранилище ключ-значение для таблицы.
- * Ключи хранятся как строки, значения как массивы байт.
- */
+
 public class InMemoryKeyValueStore implements KeyValueStore<byte[]> {
     private final String tableName;
     private final TableOptions options;
@@ -67,11 +64,9 @@ public class InMemoryKeyValueStore implements KeyValueStore<byte[]> {
         try {
             byte[] oldValue = map.put(key, value);
             if (oldValue == null) {
-                // new key
                 metrics.incrementKeyCount();
                 metrics.addDataSize(key.getBytes(StandardCharsets.UTF_8).length + value.length);
             } else {
-                // existing key, adjust data size by difference
                 long diff = value.length - oldValue.length;
                 metrics.addDataSize(diff);
             }

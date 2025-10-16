@@ -1,8 +1,6 @@
 package com.example.kvdb.api;
 
-/**
- * Параметры таблицы: включает/выключает WAL, задает политику fsync и лимит размера значения.
- */
+
 public class TableOptions {
     private boolean walEnabled;
     private boolean fsync;

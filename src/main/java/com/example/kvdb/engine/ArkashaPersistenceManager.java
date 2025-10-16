@@ -9,9 +9,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * Менеджер персистентности: сохраняет снимок базы данных на диск и загружает его при старте.
- */
 class ArkashaPersistenceManager implements PersistenceManager {
     private final ArkashaEngine engine;
     private final File snapshotFile;
@@ -24,12 +21,9 @@ class ArkashaPersistenceManager implements PersistenceManager {
     @Override
     public void flush() {
         try (RandomAccessFile raf = new RandomAccessFile(snapshotFile, "rw")) {
-            // Truncate existing file
             raf.setLength(0);
-            // Write magic and version
             raf.writeBytes("ARKA");
             raf.writeInt(1);
-            // Write number of tables
             List<String> tableNames = engine.getAllTableNames();
             raf.writeInt(tableNames.size());
             for (String tableName : tableNames) {
@@ -38,11 +32,9 @@ class ArkashaPersistenceManager implements PersistenceManager {
                 raf.writeInt(nameBytes.length);
                 raf.write(nameBytes);
                 TableOptions options = store.getOptions();
-                // Write table options: walEnabled, fsync, maxValueSize
                 raf.writeBoolean(options.isWalEnabled());
                 raf.writeBoolean(options.isFsync());
                 raf.writeInt(options.getMaxValueSize());
-                // Write number of entries
                 List<String> keys = store.keys();
                 raf.writeInt(keys.size());
                 for (String key : keys) {
@@ -61,7 +53,6 @@ class ArkashaPersistenceManager implements PersistenceManager {
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при сохранении данных: " + e.getMessage(), e);
         }
-        // Clear WAL file after snapshot (start a new log)
         File walFile = ((ArkashaWriteAheadLog) engine.getWriteAheadLog()).getLogFile();
         if (walFile.exists()) {
             walFile.delete();
@@ -74,7 +65,6 @@ class ArkashaPersistenceManager implements PersistenceManager {
             return;
         }
         try (RandomAccessFile raf = new RandomAccessFile(snapshotFile, "r")) {
-            // Read and validate magic
             byte[] magic = new byte[4];
             raf.readFully(magic);
             String magicStr = new String(magic, StandardCharsets.UTF_8);
@@ -108,7 +98,6 @@ class ArkashaPersistenceManager implements PersistenceManager {
                     if (valueLen > 0) {
                         raf.readFully(value);
                     }
-                    // Directly put into store (WAL disabled globally during load)
                     store.put(key, value);
                 }
             }

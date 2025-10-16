@@ -3,9 +3,7 @@ package com.example.kvdb.engine;
 import com.example.kvdb.api.Metrics;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Реализация метрик: хранит счетчики количества ключей и объема данных.
- */
+
 public class ArkashaMetrics implements Metrics {
     private final AtomicLong totalKeys = new AtomicLong(0);
     private final AtomicLong totalBytes = new AtomicLong(0);

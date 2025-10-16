@@ -10,19 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Основной класс движка базы данных "Аркаша".
- * Реализует интерфейсы StorageEngine, TableRegistry, Distributed.
- * Содержит в памяти все таблицы и обеспечивает потокобезопасный доступ, персистентность и WAL.
- */
 public class ArkashaEngine implements StorageEngine, TableRegistry, Distributed {
     private final DatabaseConfig config;
     private final ArkashaMetrics metrics;
     private final ArkashaPersistenceManager persistenceManager;
     private final ArkashaWriteAheadLog writeAheadLog;
-    // Отображение имен таблиц на хранилища данных
     private final Map<String, InMemoryKeyValueStore> tables;
-    // Реестр сериализаторов для TableRegistry
     private final Map<String, Serializer<?>> serializers;
     private boolean closed = false;
 
@@ -34,13 +27,10 @@ public class ArkashaEngine implements StorageEngine, TableRegistry, Distributed 
         this.metrics = new ArkashaMetrics();
         this.tables = new HashMap<>();
         this.serializers = new HashMap<>();
-        // Ensure data directory exists
         File dataDir = new File(config.getDataPath());
         dataDir.mkdirs();
-        // Initialize WAL and PersistenceManager
         this.writeAheadLog = new ArkashaWriteAheadLog(this, new File(dataDir, "arkasha.wal"));
         this.persistenceManager = new ArkashaPersistenceManager(this, new File(dataDir, "arkasha.dat"));
-        // Load existing data (snapshot) and replay WAL if needed
         writeAheadLog.setActive(false);
         persistenceManager.load();
         int replayed = writeAheadLog.replay(this);
@@ -104,7 +94,6 @@ public class ArkashaEngine implements StorageEngine, TableRegistry, Distributed 
             metrics.decrementKeyCount(keyCount);
             metrics.addDataSize(-bytes);
         }
-        // Clear the data in the dropped table to free memory
         store.clearData();
     }
 
@@ -186,18 +175,14 @@ public class ArkashaEngine implements StorageEngine, TableRegistry, Distributed 
         return new TableImpl<>(rawStore, serializer);
     }
 
-    // Implementation of Distributed (no-op stubs)
     @Override
     public void replicate(String tableName, String key, byte[] value) {
-        // No-op (not implemented)
     }
 
     @Override
     public void addNode(String nodeId) {
-        // No-op (not implemented)
     }
 
-    // Internal methods for engine internals (accessible within package)
     InMemoryKeyValueStore getStore(String tableName) {
         return tables.get(tableName);
     }

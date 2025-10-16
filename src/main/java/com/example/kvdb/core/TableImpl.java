@@ -4,11 +4,7 @@ import com.example.kvdb.api.Table;
 import com.example.kvdb.api.KeyValueStore;
 import com.example.kvdb.util.Serializer;
 
-/**
- * Реализация типизированной таблицы.
- * Оборачивает необработанное хранилище и выполняет сериализацию/десериализацию значений.
- * @param <T> тип значения
- */
+
 public class TableImpl<T> implements Table<T> {
     private final KeyValueStore<byte[]> rawStore;
     private final Serializer<T> serializer;

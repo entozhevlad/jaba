@@ -41,12 +41,9 @@ public class ConcurrencyTest {
             }).start();
         }
         latch.await();
-        // No thread reported data inconsistency
         assertThat(errorFlag.get()).isFalse();
-        // All keys should be present
         Metrics metrics = db.getMetrics();
         assertThat(metrics.getKeyCount()).isEqualTo(threadCount * keysPerThread);
-        // Sample-check a few keys
         for (int t = 0; t < threadCount; t++) {
             String sampleKey = "T" + t + "_K" + (keysPerThread - 1);
             assertThat(new String(store.get(sampleKey), StandardCharsets.UTF_8))
