@@ -161,19 +161,14 @@ public class ArkashaEngine implements StorageEngine, TableRegistry, Distributed 
         if (closed) {
             throw new IllegalStateException("Database is closed");
         }
-        Serializer<?> ser = serializers.get(tableName);
-        if (ser == null) {
-            throw new IllegalArgumentException("No serializer registered for table '" + tableName + "'");
-        }
-        Serializer<T> serializer;
-        try {
-            serializer = (Serializer<T>) ser;
-        } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Serializer type mismatch for table '" + tableName + "'");
-        }
+
+        // 🔹 Всегда используем TLV-сериализатор
+        com.example.kvdb.util.TlvUserSerializer serializer = new com.example.kvdb.util.TlvUserSerializer();
+
         KeyValueStore<byte[]> rawStore = openTable(tableName);
-        return new TableImpl<>(rawStore, serializer);
+        return new TableImpl<>(rawStore, (com.example.kvdb.util.Serializer<T>) serializer);
     }
+
 
     @Override
     public void replicate(String tableName, String key, byte[] value) {

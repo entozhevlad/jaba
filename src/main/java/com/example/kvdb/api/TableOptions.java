@@ -4,7 +4,7 @@ package com.example.kvdb.api;
 public class TableOptions {
     private boolean walEnabled;
     private boolean fsync;
-    private int maxValueSize; // -1 означает без ограничения
+    private int maxValueSize;
 
     public TableOptions() {
         this.walEnabled = false;
