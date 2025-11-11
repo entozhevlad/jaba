@@ -3,19 +3,15 @@ package com.example.kvdb.apihttp;
 import com.example.kvdb.api.KeyValueStore;
 import com.example.kvdb.api.StorageEngine;
 import com.example.kvdb.api.TableOptions;
-import com.example.kvdb.core.InMemoryKeyValueStore;
 import com.example.kvdb.apihttp.dto.BatchRequest;
 import com.example.kvdb.apihttp.dto.BatchResponse;
-import com.example.kvdb.apihttp.dto.KeysRequest;
 import com.example.kvdb.apihttp.dto.PutManyRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
@@ -27,17 +23,19 @@ public class DatabaseController {
         this.db = db;
     }
 
-    // 1) Создать новую таблицу
-    @PostMapping(path = "/tables", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
+    // === Tables ============================================================
+
+    // POST /api/tables  — создать таблицу
+    @PostMapping(path = "/tables",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> createTable(@RequestBody Map<String, String> request) {
         String name = request.get("name");
         if (name == null || name.isEmpty()) {
             return ResponseEntity.badRequest().body("Table name is required");
         }
         try {
-            TableOptions opts = new TableOptions()
-                    .setWalEnabled(true)
-                    .setMaxValueSize(-1);
+            TableOptions opts = new TableOptions().setWalEnabled(true).setMaxValueSize(-1);
             db.createTable(name, opts);
             return ResponseEntity.ok("created: " + name);
         } catch (IllegalArgumentException e) {
@@ -47,14 +45,17 @@ public class DatabaseController {
         }
     }
 
-    // 2) Список таблиц
+    // GET /api/tables — список таблиц
     @GetMapping(path = "/tables", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> listTables() {
         return ResponseEntity.ok(db.listTables());
     }
 
-    // 3) Получить значение по ключу
-    @GetMapping(path = "/tables/{tableName}/get/{key}", produces = MediaType.TEXT_PLAIN_VALUE)
+    // === Single key (resource: /keys/{key}) ================================
+
+    // GET /api/tables/{table}/keys/{key} — прочитать значение
+    @GetMapping(path = "/tables/{tableName}/keys/{key}",
+            produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<?> get(@PathVariable String tableName, @PathVariable String key) {
         try {
             KeyValueStore<byte[]> table = db.openTable(tableName);
@@ -65,9 +66,13 @@ public class DatabaseController {
         }
     }
 
-    // 4) Положить значение по ключу
-    @PostMapping(path = "/tables/{tableName}/put/{key}", consumes = MediaType.TEXT_PLAIN_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<?> put(@PathVariable String tableName, @PathVariable String key, @RequestBody String body) {
+    // PUT /api/tables/{table}/keys/{key} — вставить/обновить значение
+    @PutMapping(path = "/tables/{tableName}/keys/{key}",
+            consumes = MediaType.TEXT_PLAIN_VALUE,
+            produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<?> put(@PathVariable String tableName,
+                                 @PathVariable String key,
+                                 @RequestBody String body) {
         try {
             KeyValueStore<byte[]> table = db.openTable(tableName);
             table.put(key, body.getBytes(StandardCharsets.UTF_8));
@@ -77,8 +82,9 @@ public class DatabaseController {
         }
     }
 
-    // 5) Удалить ключ
-    @DeleteMapping(path = "/tables/{tableName}/delete/{key}", produces = MediaType.TEXT_PLAIN_VALUE)
+    // DELETE /api/tables/{table}/keys/{key} — удалить ключ
+    @DeleteMapping(path = "/tables/{tableName}/keys/{key}",
+            produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<?> delete(@PathVariable String tableName, @PathVariable String key) {
         try {
             KeyValueStore<byte[]> table = db.openTable(tableName);
@@ -89,24 +95,33 @@ public class DatabaseController {
         }
     }
 
-    // 6) Вывести ключи (только для InMemory)
-    @GetMapping(path = "/tables/{tableName}/keys", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> listKeys(@PathVariable String tableName) {
+    // === Multiple keys (resource: /items) =================================
+
+    // GET /api/tables/{table}/items?key=a&key=b — получить несколько
+    @GetMapping(path = "/tables/{tableName}/items",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getManyQuery(@PathVariable String tableName,
+                                          @RequestParam(name = "key") List<String> keys) {
         try {
             KeyValueStore<byte[]> table = db.openTable(tableName);
-            if (table instanceof InMemoryKeyValueStore memStore) {
-                List<String> keys = memStore.keys();
-                return ResponseEntity.ok(keys);
-            } else {
-                return ResponseEntity.ok("Listing keys not supported for this engine");
+            Map<String, String> out = new HashMap<>();
+            if (keys != null) {
+                for (String k : keys) {
+                    byte[] v = table.get(k);
+                    if (v != null) out.put(k, new String(v, StandardCharsets.UTF_8));
+                }
             }
+            return ResponseEntity.ok(Map.of("items", out));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body("Table not found: " + tableName);
+            return ResponseEntity.status(404).body(Map.of("error", "Table not found", "table", tableName));
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(Map.of("error", ex.getClass().getSimpleName(), "message", ex.getMessage()));
         }
     }
 
-    // 7) МАССОВАЯ ВСТАВКА
-    @PostMapping(path="/tables/{tableName}/put-many",
+    // PUT /api/tables/{table}/items — вставить/обновить несколько
+    // Body: {"items":{"k1":"v1","k2":"v2"}}
+    @PutMapping(path="/tables/{tableName}/items",
             consumes=MediaType.APPLICATION_JSON_VALUE,
             produces=MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> putMany(@PathVariable String tableName,
@@ -129,16 +144,15 @@ public class DatabaseController {
         }
     }
 
-    // 8) МАССОВОЕ УДАЛЕНИЕ
-    @PostMapping(path="/tables/{tableName}/delete-many",
-            consumes=MediaType.APPLICATION_JSON_VALUE,
+    // DELETE /api/tables/{table}/items?key=a&key=b — удалить несколько
+    @DeleteMapping(path="/tables/{tableName}/items",
             produces=MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> deleteMany(@PathVariable String tableName,
-                                        @RequestBody KeysRequest request) {
+                                        @RequestParam(name = "key") List<String> keys) {
         try {
             KeyValueStore<byte[]> table = db.openTable(tableName);
-            int count = request.keys()==null ? 0 : request.keys().size();
-            table.deleteAll(request.keys());
+            int count = (keys == null) ? 0 : keys.size();
+            table.deleteAll(keys);
             return ResponseEntity.ok(Map.of("deleted", count));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(404).body(Map.of("error","Table not found","table",tableName));
@@ -147,34 +161,9 @@ public class DatabaseController {
         }
     }
 
-    @PostMapping(path="/tables/{tableName}/get-many",
-            consumes=MediaType.APPLICATION_JSON_VALUE,
-            produces=MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getMany(@PathVariable String tableName,
-                                     @RequestBody com.example.kvdb.apihttp.dto.KeysRequest request) {
-        try {
-            KeyValueStore<byte[]> table = db.openTable(tableName);
-            java.util.Map<String, byte[]> raw = table.getAll(request.keys());
-            java.util.Map<String, String> out = new java.util.HashMap<>();
-            if (raw != null) {
-                for (var e : raw.entrySet()) {
-                    out.put(e.getKey(),
-                            e.getValue()==null ? null :
-                                    new String(e.getValue(), java.nio.charset.StandardCharsets.UTF_8));
-                }
-            }
-            return ResponseEntity.ok(java.util.Map.of("items", out));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(java.util.Map.of("error","Table not found","table",tableName));
-        } catch (Exception ex) {
-            return ResponseEntity.internalServerError().body(java.util.Map.of(
-                    "error", ex.getClass().getSimpleName(),
-                    "message", ex.getMessage()
-            ));
-        }
-    }
+    // === Batch (action) ====================================================
 
-    // 9) BATCH: put/get/delete за один запрос
+    // POST /api/tables/{table}/batch — смешанные операции
     @PostMapping(path="/tables/{tableName}/batch",
             consumes=MediaType.APPLICATION_JSON_VALUE,
             produces=MediaType.APPLICATION_JSON_VALUE)
@@ -215,7 +204,7 @@ public class DatabaseController {
                 }
             }
 
-            return ResponseEntity.ok(java.util.Map.of("results", out.results()));
+            return ResponseEntity.ok(Map.of("results", out.results()));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(404).body(Map.of("error","Table not found","table",tableName));
         } catch (Exception ex) {
