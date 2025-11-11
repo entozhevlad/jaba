@@ -7,11 +7,12 @@
     <artifactId>arkasha</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Arkasha Key-Value DB</name>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -51,23 +52,19 @@
             <artifactId>avro</artifactId>
             <version>1.11.3</version>
         </dependency>
+
+        <!-- Dependency for Apache Spark (Spark SQL 3.5.0 with Hadoop 3) -->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.12</artifactId>
+            <version>3.5.0</version>
+            <scope>provided</scope> <!-- ⚠️ ВАЖНО -->
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <!-- Плагин Spring Boot: собирает fat JAR со всеми зависимостями -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.1.4</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
 
             <!-- Указание точки входа в приложение -->
             <plugin>
@@ -83,13 +80,36 @@
                 </configuration>
             </plugin>
 
-            <!-- Плагин для тестов (не обязателен, но пусть будет) -->
+            <!-- Плагин для тестов -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M8</version>
             </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.example.kvdb.apihttp.ArkashaApiApplication</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
-
 </project>

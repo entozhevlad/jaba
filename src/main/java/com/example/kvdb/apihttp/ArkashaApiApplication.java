@@ -7,14 +7,18 @@ import com.example.kvdb.engine.ArkashaEngine;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import com.example.kvdb.spark.SparkClient;
 
 @SpringBootApplication
 public class ArkashaApiApplication {
 
     public static void main(String[] args) {
+        if (args.length > 0 && args[0].equals("lab2")) {
+            SparkClient.runLab();
+            return;
+        }
         SpringApplication.run(ArkashaApiApplication.class, args);
     }
-
     @Bean
     public StorageEngine arkashaEngine() {
         DatabaseConfig config = new DatabaseConfig("data");
