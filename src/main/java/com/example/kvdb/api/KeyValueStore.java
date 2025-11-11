@@ -12,7 +12,6 @@ public interface KeyValueStore<V> {
 
     boolean containsKey(String key);
 
-    // --- ДОБАВИТЬ: пакетные операции по умолчанию ---
     default void putAll(java.util.Map<String, V> items) {
         if (items == null) return;
         for (java.util.Map.Entry<String, V> e : items.entrySet()) {

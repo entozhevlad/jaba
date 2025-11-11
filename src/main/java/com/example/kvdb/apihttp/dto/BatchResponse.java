@@ -8,8 +8,8 @@ public class BatchResponse {
         public String op;
         public String key;
         public String value;
-        public String status; // "ok" | "error"
-        public String error;  // текст ошибки, если статус "error"
+        public String status;
+        public String error;
     }
     private final List<Result> results = new ArrayList<>();
     public void addOk(String op, String key, String value) {

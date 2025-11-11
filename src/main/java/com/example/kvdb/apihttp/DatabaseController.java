@@ -23,9 +23,7 @@ public class DatabaseController {
         this.db = db;
     }
 
-    // === Tables ============================================================
 
-    // POST /api/tables  — создать таблицу
     @PostMapping(path = "/tables",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.TEXT_PLAIN_VALUE)
@@ -45,15 +43,11 @@ public class DatabaseController {
         }
     }
 
-    // GET /api/tables — список таблиц
     @GetMapping(path = "/tables", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> listTables() {
         return ResponseEntity.ok(db.listTables());
     }
 
-    // === Single key (resource: /keys/{key}) ================================
-
-    // GET /api/tables/{table}/keys/{key} — прочитать значение
     @GetMapping(path = "/tables/{tableName}/keys/{key}",
             produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<?> get(@PathVariable String tableName, @PathVariable String key) {
@@ -66,7 +60,6 @@ public class DatabaseController {
         }
     }
 
-    // PUT /api/tables/{table}/keys/{key} — вставить/обновить значение
     @PutMapping(path = "/tables/{tableName}/keys/{key}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = MediaType.TEXT_PLAIN_VALUE)
@@ -82,7 +75,6 @@ public class DatabaseController {
         }
     }
 
-    // DELETE /api/tables/{table}/keys/{key} — удалить ключ
     @DeleteMapping(path = "/tables/{tableName}/keys/{key}",
             produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<?> delete(@PathVariable String tableName, @PathVariable String key) {
@@ -95,9 +87,6 @@ public class DatabaseController {
         }
     }
 
-    // === Multiple keys (resource: /items) =================================
-
-    // GET /api/tables/{table}/items?key=a&key=b — получить несколько
     @GetMapping(path = "/tables/{tableName}/items",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getManyQuery(@PathVariable String tableName,
@@ -119,8 +108,6 @@ public class DatabaseController {
         }
     }
 
-    // PUT /api/tables/{table}/items — вставить/обновить несколько
-    // Body: {"items":{"k1":"v1","k2":"v2"}}
     @PutMapping(path="/tables/{tableName}/items",
             consumes=MediaType.APPLICATION_JSON_VALUE,
             produces=MediaType.APPLICATION_JSON_VALUE)
@@ -144,7 +131,6 @@ public class DatabaseController {
         }
     }
 
-    // DELETE /api/tables/{table}/items?key=a&key=b — удалить несколько
     @DeleteMapping(path="/tables/{tableName}/items",
             produces=MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> deleteMany(@PathVariable String tableName,
@@ -161,9 +147,6 @@ public class DatabaseController {
         }
     }
 
-    // === Batch (action) ====================================================
-
-    // POST /api/tables/{table}/batch — смешанные операции
     @PostMapping(path="/tables/{tableName}/batch",
             consumes=MediaType.APPLICATION_JSON_VALUE,
             produces=MediaType.APPLICATION_JSON_VALUE)
