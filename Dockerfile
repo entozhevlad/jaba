@@ -1,5 +1,10 @@
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY target/arkasha-1.0-SNAPSHOT-jar-with-dependencies.jar /app/target/arkasha-1.0-SNAPSHOT-jar-with-dependencies.jar
+
+# Копируем fat-jar внутрь контейнера под понятным именем
+COPY target/arkasha-1.0-SNAPSHOT-jar-with-dependencies.jar app.jar
+
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+
+# ЯВНО говорим, какой main запускать
+CMD ["java", "-cp", "app.jar", "com.example.kvdb.apihttp.ArkashaApiApplication"]
